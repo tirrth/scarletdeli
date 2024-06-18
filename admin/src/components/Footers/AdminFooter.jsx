@@ -17,7 +17,7 @@ function Footer(props) {
               href="https://enatega.com/"
               rel="noopener noreferrer"
               target="_blank">
-              Enatega
+              Scarlet
             </a>
           </div>
         </Col>
@@ -29,7 +29,7 @@ function Footer(props) {
                 href="https://enatega.com/"
                 rel="noopener noreferrer"
                 target="_blank">
-                Enatega
+                Scarlet
               </NavLink>
             </NavItem>
 

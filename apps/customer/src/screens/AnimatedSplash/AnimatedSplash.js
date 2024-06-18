@@ -39,21 +39,22 @@ function AnimatedSplashScreen({ children, image }) {
       {!animationCompleted && (
         <Animated.View
           pointerEvents="none"
-          // style={[
-          //   StyleSheet.absoluteFill,
-          //   {
-          //     backgroundColor: Constants.manifest.splash.backgroundColor,
-          //     opacity: animation
-          //   }
-          // ]}
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: Constants.expoConfig?.splash?.backgroundColor,
+              opacity: animation
+            }
+          ]}
           >
           <Animated.Image
             style={{
               width: '100%',
               height: '100%',
-              // resizeMode: 'contain',
+              resizeMode: 'contain',
               transform: [
                 {
+
                   scale: animation
                 }
               ]

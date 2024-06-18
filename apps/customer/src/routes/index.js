@@ -1,11 +1,16 @@
 /* eslint-disable react/prop-types */
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { createDrawerNavigator, useDrawerProgress } from "@react-navigation/drawer";
 import { NavigationContainer, useTheme } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import * as Notifications from "expo-notifications";
 import React, { useEffect } from "react";
-import { Text, useColorScheme, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { Text, useColorScheme } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import {
   initialWindowMetrics,
   SafeAreaProvider,
@@ -75,9 +80,25 @@ const SideDrawer = createDrawerNavigator();
 
 function Drawer() {
   const { colors } = useTheme();
-  let animatedStyle = {};
-  let opacity;
-  let OuterWindowSlide, InnerWindowSlide;
+  const progress = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    borderRadius: progress.value === 0 ? 0 : withSpring(20),
+    transform: [{ scale: progress.value === 0 ? 1 : withSpring(0.7) }],
+  }));
+
+  const opacity = useAnimatedStyle(() => ({
+    opacity: progress.value === 0 ? 0 : withSpring(1),
+  }));
+
+  const OuterWindowSlide = useAnimatedStyle(() => ({
+    marginLeft: withTiming(progress.value === 0 ? 0 : -35),
+  }));
+
+  const InnerWindowSlide = useAnimatedStyle(() => ({
+    marginLeft: withTiming(progress.value === 0 ? 0 : -15),
+  }));
+
   return (
     <SideDrawer.Navigator
       drawerType="slide"
@@ -94,43 +115,9 @@ function Drawer() {
         },
         sceneContainerStyle: { backgroundColor: colors.drawerBackground },
       }}
-      // drawerStyle={{
-      //   flex: 1,
-      //   backgroundColor: colors.drawerBackground,
-      //   width: "60%",
-      //   justifyContent: "space-between",
-      //   borderRightWidth: 0,
-      //   shadowOpacity: 0,
-      //   elevation: 0,
-      // }}
-      // sceneContainerStyle={{ backgroundColor: colors.drawerBackground }}
 
       drawerContent={(props) => {
-        const scale = Animated.interpolateNode(props.progress, {
-          inputRange: [0, 1],
-          outputRange: [1, 0.7],
-        });
-        const Animatedopacity = Animated.interpolateNode(props.progress, {
-          inputRange: [0, 0.6, 1],
-          outputRange: [0, 0, 1],
-        });
-        const AnimatedOuterSlide = Animated.interpolateNode(props.progress, {
-          inputRange: [0, 1],
-          outputRange: [0, -35],
-        });
-        const AnimatedInnerSlide = Animated.interpolateNode(props.progress, {
-          inputRange: [0, 1],
-          outputRange: [0, -15],
-        });
-        const borderRadius = Animated.interpolateNode(props.progress, {
-          inputRange: [0, 1],
-          outputRange: [0, 20],
-        });
-        animatedStyle = { borderRadius, transform: [{ scale }] };
-        opacity = Animatedopacity;
-        OuterWindowSlide = AnimatedOuterSlide;
-        InnerWindowSlide = AnimatedInnerSlide;
-
+        // progress.value = props.progress;
         return <Sidebar {...props} />;
       }}
     >
@@ -138,10 +125,10 @@ function Drawer() {
         {(props) => (
           <NoDrawer
             {...props}
-            style={animatedStyle}
-            opacity={opacity}
-            OuterWindowSlide={OuterWindowSlide}
-            InnerWindowSlide={InnerWindowSlide}
+            // style={animatedStyle}
+            // opacity={opacity}
+            // OuterWindowSlide={OuterWindowSlide}
+            // InnerWindowSlide={InnerWindowSlide}
           />
         )}
       </SideDrawer.Screen>
@@ -149,20 +136,35 @@ function Drawer() {
   );
 }
 
-function NoDrawer({ style, opacity = 1, OuterWindowSlide, InnerWindowSlide }) {
+function NoDrawer() {
   const { colors } = useTheme();
+
+  // Get drawer progress using the hook
+  const progress = useDrawerProgress();
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    borderRadius: progress.value > 0 ? withSpring(20) : 0, // Only animate if progress > 0
+    transform: [{ scale: progress.value > 0 ? withSpring(0.7) : 1 }], // Only animate if progress > 0
+  }));
+
+  const closeViewOpacity = useAnimatedStyle(() => ({
+    opacity: progress.value > 0 ? withSpring(1) : 0, // Only animate if progress > 0
+  }));
+
+  const outerWindowSlideStyle = useAnimatedStyle(() => ({
+    marginLeft: withTiming(progress.value * -35),
+  }));
+
+  const innerWindowSlideStyle = useAnimatedStyle(() => ({
+    marginLeft: withTiming(progress.value * -15),
+  }));
 
   return (
     <React.Fragment>
-      <Animated.View
-        style={[styles.outerView, style, { marginLeft: OuterWindowSlide }]}
-      />
-      <Animated.View
-        style={[styles.innerView, style, { marginLeft: InnerWindowSlide }]}
-      />
-      <Animated.View style={[styles.animatedView, style]}>
+      <Animated.View style={[styles.outerView, outerWindowSlideStyle]} />
+      <Animated.View style={[styles.innerView, innerWindowSlideStyle]} />
+      <Animated.View style={[styles.animatedView, animatedStyle]}>
         <NavigationStack.Navigator
-          //mode="modal"
           presentation="modal"
           screenOptions={screenOptions({
             textColor: colors.headerTextColor,
@@ -291,7 +293,7 @@ function NoDrawer({ style, opacity = 1, OuterWindowSlide, InnerWindowSlide }) {
           />
         </NavigationStack.Navigator>
       </Animated.View>
-      <Animated.View style={[styles.closeView, { opacity: opacity }]}>
+      <Animated.View style={[styles.closeView, closeViewOpacity]}>
         <TextDefault H4 medium>
           {"Close X"}
         </TextDefault>
@@ -343,8 +345,6 @@ function AppContainer() {
           screenOptions={{
             headerShown: false,
           }}
-          //headerMode="none"
-
           initialRouteName={NAVIGATION_SCREEN.Drawer}
         >
           <MainStack.Screen
